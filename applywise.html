@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ApplyWise</title>
+    <!-- Chargement de Tailwind CSS pour le style -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de html2pdf.js pour la conversion PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      /* Configuration de la police Inter et couleurs de base */
+      :root {
+        --primary-color: #4f46e5; /* Indigo-600 */
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f3f4f6; /* Gray-100 */
+      }
+      .btn-primary {
+        background-color: var(--primary-color);
+        transition: transform 0.1s;
+      }
+      .btn-primary:hover {
+        background-color: #4338ca; /* Indigo-700 */
+        transform: translateY(-1px);
+      }
+      .input-group label {
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: block;
+      }
+      textarea,
+      input[type="text"] {
+        border: 1px solid #d1d5db; /* Gray-300 */
+        padding: 10px;
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        resize: vertical;
+      }
+      #letter-content-display {
+        white-space: pre-wrap; /* Preserve formatting from LLM output */
+        min-height: 200px;
+      }
+      .shadow-glow {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 10px rgba(79, 70, 229, 0.5);
+      }
+    </style>
+  </head>
+  <body class="p-4 sm:p-8">
+    <div
+      id="app"
+      class="max-w-7xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-10 shadow-glow"
+    >
+      <header class="text-center mb-10">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-2">🚀 ApplyWise</h1>
+        <p class="text-xl text-indigo-600">
+          Génération & Critique de Lettres de Motivation Propulsées par Gemini
+        </p>
+      </header>
+
+      <!-- Conteneur principal: 2 colonnes (Inputs et Contenu/Critique) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Colonne 1: Inputs et Actions -->
+        <div class="lg:col-span-1 space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
+            Paramètres et Actions
+          </h2>
+
+          <!-- Groupes d'entrée pour la génération -->
+          <div
+            id="generation-inputs"
+            class="space-y-4 p-4 bg-indigo-50 rounded-lg"
+          >
+            <h3 class="font-semibold text-lg text-indigo-700">
+              Génération Automatique
+            </h3>
+            <div class="input-group">
+              <label for="job-title"
+                >Intitulé du Poste (Ex: Data Scientist)</label
+              >
+              <input
+                type="text"
+                id="job-title"
+                placeholder="Ex: Développeur Full-Stack"
+                class="p-2"
+              />
+            </div>
+            <div class="input-group">
+              <label for="company-name">Nom de l'Entreprise</label>
+              <input
+                type="text"
+                id="company-name"
+                placeholder="Ex: Google"
+                class="p-2"
+              />
+            </div>
+            <div class="input-group">
+              <label for="user-context"
+                >Votre Profil (Expérience, Compétences clés)</label
+              >
+              <textarea
+                id="user-context"
+                rows="4"
+                placeholder="Ex: 5 ans d'expérience en React/Node, passionné par l'UX, diplômé de l'EPITA..."
+                class="p-2"
+              ></textarea>
+            </div>
+
+            <button
+              id="generate-btn"
+              class="w-full btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2"
+            >
+              <span>Générer la Lettre</span>
+              <!-- Icône Lucide: Sparkles -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M5 3v4M3 5h4M19 3v4M17 5h4M5 19v2M3 17h4M19 19v2M17 17h4M14 2h2M14 22h2M2 14h2M22 14h2M14 8v8M8 14h8"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Actions de Fichier (Upload/Download) -->
+          <div class="space-y-4 p-4 bg-white rounded-lg border">
+            <h3 class="font-semibold text-lg text-gray-700">
+              Gestion de Fichier
+            </h3>
+            <div class="input-group">
+              <label for="file-upload" class="text-sm"
+                >Télécharger une lettre existante (.txt)</label
+              >
+              <input
+                type="file"
+                id="file-upload"
+                accept=".txt"
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+              />
+            </div>
+            <button
+              id="download-pdf-btn"
+              class="w-full bg-red-600 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-red-700 transition duration-150"
+            >
+              <span>Télécharger en PDF</span>
+              <!-- Icône Lucide: Download -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" x2="12" y1="15" y2="3" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Critique Action -->
+          <div class="space-y-4 p-4 bg-yellow-50 rounded-lg">
+            <h3 class="font-semibold text-lg text-yellow-700">
+              Analyse Critique IA
+            </h3>
+            <p class="text-sm text-yellow-800">
+              Assurez-vous que l'Intitulé du Poste ci-dessus est correct pour
+              une analyse de mots-clés pertinente.
+            </p>
+            <button
+              id="critique-btn"
+              class="w-full bg-yellow-500 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-yellow-600 transition duration-150"
+              disabled
+            >
+              <span>Analyser et Critiquer</span>
+              <!-- Icône Lucide: Search Check -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m21 21-4.3-4.3" />
+                <path d="M11 2a9 9 0 1 0 0 18a9 9 0 0 0 0-18" />
+                <path d="M15 10l-3 3l-2-2" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Colonne 2 & 3: Contenu de la Lettre et Critique -->
+        <div class="lg:col-span-2 space-y-8">
+          <!-- Section Lettre de Motivation -->
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
+              Lettre de Motivation
+            </h2>
+            <textarea
+              id="letter-content-display"
+              class="w-full p-4 rounded-lg bg-white shadow-inner"
+              placeholder="Votre lettre générée ou téléchargée apparaîtra ici. Vous pouvez la modifier directement."
+              rows="15"
+            ></textarea>
+          </div>
+
+          <!-- Section Critique IA -->
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
+              Critique IA et Suggestions d'Amélioration
+            </h2>
+            <div
+              id="critique-results"
+              class="w-full p-4 rounded-lg bg-gray-50 shadow-inner min-h-[100px] text-gray-700 whitespace-pre-wrap"
+            >
+              La critique de la lettre (style, cohérence, mots-clés) s'affichera
+              ici après analyse.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone de chargement et messages -->
+      <div
+        id="loading-area"
+        class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden"
+      >
+        <div
+          class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center space-y-3"
+        >
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"
+          ></div>
+          <p id="loading-message" class="text-gray-800 font-semibold">
+            Génération en cours...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Variables globales (remplacez par l'environnement Canvas si déployé)
+      const apiKey = "AIzaSyD6LaNTvZXx5mxAEocUQmssL-D_7r6W0Ro";
+      const apiUrl =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=" +
+        apiKey;
+
+      // --- DÉBUT DU BLOC D'EXEMPLES POUR LE FINE-TUNING VIRTUEL (Few-Shot Prompting) ---
+
+      // ATTENTION : Remplacez le texte après les marqueurs `OUTPUT:` par VOS lettres de motivation parfaites.
+      const EXAMPLE_LETTERS = `
+        
+        --- DÉBUT EXEMPLE 1 (Data Scientist) ---
+        INPUT: Candidature pour le rôle de Data Scientist, Secteur de la Fintech, chez NovaBank. PROFIL : 6 ans d'expérience dans la modélisation prédictive (Python/TensorFlow), projet clé : amélioration de 20% de la détection de fraude.
+        OUTPUT:
+        Objet : Candidature pour le poste de Data Scientist (Référence D45)
+        
+        Madame, Monsieur,
+        
+        Face à l'ambition stratégique de NovaBank d'optimiser la sécurité de ses transactions en ligne, mes six années d'expérience dans la modélisation prédictive me positionnent comme un atout immédiat. Mon expertise en Python et TensorFlow est directement alignée avec les défis techniques que vous décrivez.
+        
+        Mon approche est orientée vers l'impact mesurable. Chez mon employeur précédent, j'ai mené le projet d'amélioration des algorithmes de détection de fraude. En refactorisant l'architecture des réseaux de neurones, j'ai réussi à augmenter la performance de ce système de 20%, réduisant ainsi les pertes annuelles de l'entreprise. Ce succès démontre ma capacité à transformer des hypothèses analytiques en résultats financiers concrets.
+        
+        Je suis particulièrement intéressé par votre culture d'innovation et je suis convaincu que mes compétences me permettraient non seulement de maintenir, mais d'élever les standards d'excellence de votre équipe. Je serais ravi d'échanger avec vous sur la manière dont je peux répliquer ce type de succès chez NovaBank.
+        
+        Dans l’attente de vous lire, veuillez agréer, Madame, Monsieur, l’expression de mes salutations distinguées.
+        
+        [Votre Nom]
+        
+        --- FIN EXEMPLE 1 ---
+        
+        --- DÉBUT EXEMPLE 2 (Chef de Projet) ---
+        INPUT: Candidature pour le rôle de Chef de Projet Marketing Digital, chez Agence CréaProd. PROFIL : 4 ans d'expérience en gestion de campagnes AGILE (Scrum), succès : lancement de trois produits avec +35% d'engagement client.
+        OUTPUT:
+        Objet : Proposition de collaboration - Chef de Projet Digital
+        
+        Madame Durand,
+        
+        L'approche disruptive d'Agence CréaProd en matière de storytelling et votre récent succès avec la campagne [Nom d'une campagne] est la raison directe de ma candidature. Je ne cherche pas un poste, mais une opportunité de mettre ma méthodologie éprouvée au service de votre croissance.
+        
+        Fort de quatre années d'expérience en pilotage de projets marketing en mode AGILE (Scrum), j'excelle à convertir une vision stratégique en livrables concrets et rentables. Mon dernier succès notable est le pilotage complet du lancement de trois produits, aboutissant à une augmentation mesurée de 35% de l'engagement client sur 12 mois et une livraison constante dans les délais.
+        
+        Mon profil est celui d'un leader qui garantit la cohérence entre les équipes techniques et créatives, assurant que chaque sprint contribue directement aux objectifs commerciaux. Je suis prêt à réitérer de tels résultats au sein de votre équipe et à échanger sur la manière dont ma gestion de projet peut accélérer vos prochains lancements.
+        
+        Dans l’attente de vous lire, veuillez agréer, Madame, l’expression de mes salutations distinguées.
+        
+        [Votre Nom]
+        
+        --- FIN EXEMPLE 2 ---
+        
+        `;
+
+      // --- FIN DU BLOC D'EXEMPLES ---
+
+      // Références aux éléments du DOM
+      const jobTitleInput = document.getElementById("job-title");
+      const companyNameInput = document.getElementById("company-name");
+      const userContextInput = document.getElementById("user-context");
+      const letterContentDisplay = document.getElementById(
+        "letter-content-display"
+      );
+      const generateBtn = document.getElementById("generate-btn");
+      const critiqueBtn = document.getElementById("critique-btn");
+      const fileUploadInput = document.getElementById("file-upload");
+      const downloadPdfBtn = document.getElementById("download-pdf-btn");
+      const critiqueResultsDiv = document.getElementById("critique-results");
+      const loadingArea = document.getElementById("loading-area");
+      const loadingMessage = document.getElementById("loading-message");
+
+      // --- Fonctions d'Utilité et d'UI (Identiques à la version précédente) ---
+
+      /** Affiche/Masque l'indicateur de chargement. */
+      function showLoading(isLoading, message = "Chargement...") {
+        loadingMessage.textContent = message;
+        loadingArea.classList.toggle("hidden", !isLoading);
+        [generateBtn, critiqueBtn, downloadPdfBtn, fileUploadInput].forEach(
+          (btn) => {
+            btn.disabled = isLoading;
+          }
+        );
+      }
+
+      /** Gère les erreurs de l'API avec backoff exponentiel. */
+      async function fetchWithRetry(url, payload, retries = 3) {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const response = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              if (response.status === 429 && i < retries - 1) {
+                const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                // console.log(`Rate limit exceeded, retrying in ${delay / 1000}s...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+                continue;
+              }
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+          } catch (error) {
+            // console.error(`Attempt ${i + 1} failed:`, error);
+            if (i === retries - 1) throw error;
+            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+            // console.log(`Retrying in ${delay / 1000}s...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      /** Extrait le texte de la réponse Gemini. */
+      function extractText(result) {
+        return (
+          result.candidates?.[0]?.content?.parts?.[0]?.text ||
+          "Erreur: Contenu généré introuvable."
+        );
+      }
+
+      /** Met à jour l'état du bouton de critique. */
+      function updateCritiqueButtonState() {
+        critiqueBtn.disabled =
+          !letterContentDisplay.value.trim() || !jobTitleInput.value.trim();
+      }
+
+      /** Génère la lettre de motivation via l'API Gemini (MISE À JOUR AVEC FEW-SHOT). */
+      async function handleGenerate() {
+        const jobTitle = jobTitleInput.value.trim();
+        const companyName = companyNameInput.value.trim();
+        const userContext = userContextInput.value.trim();
+
+        if (!jobTitle || !companyName || !userContext) {
+          alert(
+            "Veuillez remplir l'Intitulé du Poste, le Nom de l'Entreprise et Votre Profil pour la génération."
+          );
+          return;
+        }
+
+        showLoading(true, "Génération de la lettre de motivation...");
+        critiqueResultsDiv.textContent =
+          "La critique de la lettre s'affichera ici après analyse.";
+
+        try {
+          // 1. INSTRUCTION SYSTÈME (Le Rôle de l'IA - Affiné)
+          const systemPrompt = `Vous êtes un copywriter de carrière, expert en lettres de motivation qui obtiennent 90% d'entretiens. Votre objectif est de générer une lettre de motivation en français en imitant le style des exemples fournis ci-dessous. Le ton doit être **direct, orienté vers les résultats**, et ne jamais utiliser de phrases génériques comme 'Je suis motivé'. La structure doit se concentrer sur l'impact mesurable, la preuve par les chiffres et la connexion entre l'expérience du candidat et la valeur de l'entreprise. N'utilisez que du texte simple, sans balises Markdown de titre ou de liste.`;
+
+          // CORRECTION DE L'ERREUR ICI: suppression de la double assignation 'const fewShotPrompt = fewShotPrompt = '
+          // 2. CONTEXTE GLOBAL (Few-Shot Prompt)
+          const fewShotPrompt = `
+                --- EXEMPLES DE LETTRES IDÉALES À IMITER ---
+                ${EXAMPLE_LETTERS}
+                --- FIN DES EXEMPLES ---
+                
+                Maintenant, générez la LETTRE IDÉALE pour le contexte suivant :
+                INPUT: Candidature pour le rôle de ${jobTitle}, chez ${companyName}. PROFIL : ${userContext}.
+                OUTPUT: 
+                `;
+
+          const payload = {
+            contents: [{ parts: [{ text: fewShotPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+          };
+
+          const result = await fetchWithRetry(apiUrl, payload);
+          letterContentDisplay.value = extractText(result);
+        } catch (error) {
+          console.error("Erreur de génération:", error);
+          letterContentDisplay.value =
+            "Erreur lors de la connexion à l'IA pour la génération de la lettre. Veuillez vérifier votre clé API ou réessayer.";
+        } finally {
+          showLoading(false);
+          updateCritiqueButtonState();
+        }
+      }
+
+      /** Critique la lettre de motivation via l'API Gemini avec Google Search Grounding. */
+      async function handleCritique() {
+        const letterContent = letterContentDisplay.value.trim();
+        const jobTitle = jobTitleInput.value.trim();
+
+        if (!letterContent || !jobTitle) {
+          alert(
+            "Veuillez générer ou télécharger une lettre ET spécifier l'Intitulé du Poste avant de lancer la critique."
+          );
+          return;
+        }
+
+        showLoading(true, "Analyse et critique approfondie de l'IA...");
+        critiqueResultsDiv.textContent = "";
+
+        try {
+          const systemPrompt = `Vous êtes un analyste de documents expert et un recruteur professionnel. Vous devez critiquer et suggérer des améliorations pour la lettre de motivation fournie. Votre analyse doit être en français et structurée par catégories.
+                Concentrez-vous sur les points suivants :
+                - **Style et Ton:** Le ton est-il professionnel, confiant et adapté au secteur ?
+                - **Clarté et Cohérence:** Les arguments sont-ils faciles à suivre et cohérents avec l'objectif du poste ?
+                - **Structure et Présentation:** Le format est-il standard et aéré ?
+                - **Orthographe et Grammaire:** (Signalez les erreurs évidentes, mais concentrez-vous sur le fond).
+                - **Mots-clés Pertinents:** Le candidat a-t-il utilisé les termes clés spécifiques au poste et au secteur d'activité (utilisez la recherche web pour l'analyse des mots-clés) ?
+                Fournissez des suggestions concrètes et actionnables pour chaque catégorie, et terminez par une note globale sur 10. Utilisez le format Markdown pour structurer la critique avec des titres de section.`;
+
+          const userQuery = `Critiquer la lettre suivante pour le poste de "${jobTitle}":\n\n${letterContent}`;
+
+          const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            // Utilisation de Google Search pour identifier les mots-clés pertinents du secteur
+            tools: [{ google_search: {} }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+          };
+
+          const result = await fetchWithRetry(apiUrl, payload);
+          const critiqueText = extractText(result);
+
+          // Extraction et affichage des sources de vérification (mots-clés)
+          let sourcesHtml = "";
+          const groundingMetadata = result.candidates?.[0]?.groundingMetadata;
+          if (groundingMetadata && groundingMetadata.groundingAttributions) {
+            const sources = groundingMetadata.groundingAttributions
+              .map((attr) => attr.web)
+              .filter((web) => web && web.uri && web.title)
+              .slice(0, 3); // Limiter à 3 sources
+
+            if (sources.length > 0) {
+              sourcesHtml =
+                `<h4 class="font-bold mt-4 text-sm text-gray-500">Sources de la vérification de mots-clés :</h4><ul>` +
+                sources
+                  .map(
+                    (s) =>
+                      `<li class="text-xs ml-4 list-disc"><a href="${s.uri}" target="_blank" class="text-indigo-500 hover:underline">${s.title}</a></li>`
+                  )
+                  .join("") +
+                `</ul>`;
+            }
+          }
+
+          critiqueResultsDiv.innerHTML = `<p>${critiqueText.replace(
+            /\n/g,
+            "<br>"
+          )}</p>${sourcesHtml}`;
+        } catch (error) {
+          console.error("Erreur de critique:", error);
+          critiqueResultsDiv.textContent =
+            "Erreur lors de la connexion à l'IA pour la critique. Veuillez vérifier votre clé API ou réessayer.";
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      /** Télécharge le contenu de la lettre en PDF. */
+      function handleDownloadPDF() {
+        const letterContent = letterContentDisplay.value.trim();
+        if (!letterContent) {
+          alert(
+            "La zone de texte est vide. Veuillez générer ou coller une lettre avant de télécharger."
+          );
+          return;
+        }
+
+        // Créer un conteneur pour le contenu PDF pour le style
+        const content = document.createElement("div");
+        content.style.padding = "20mm";
+        content.style.fontSize = "12pt";
+        content.style.fontFamily = "serif";
+        content.style.whiteSpace = "pre-wrap";
+        content.textContent = letterContent;
+
+        const filename = `Lettre_Motivation_${
+          jobTitleInput.value.trim() || "Generale"
+        }.pdf`;
+
+        showLoading(true, "Création du fichier PDF...");
+
+        // Utiliser html2pdf pour convertir le contenu en PDF
+        html2pdf()
+          .from(content)
+          .set({
+            margin: 10,
+            filename: filename,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              logging: false,
+              dpi: 192,
+              letterRendering: true,
+            },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          })
+          .save()
+          .finally(() => {
+            showLoading(false);
+          });
+      }
+
+      /** Gère l'upload d'un fichier texte. */
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== "text/plain") {
+          alert("Seuls les fichiers .txt sont supportés.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          letterContentDisplay.value = e.target.result;
+          updateCritiqueButtonState();
+          critiqueResultsDiv.textContent =
+            "Lettre téléchargée. Cliquez sur 'Analyser et Critiquer' pour des suggestions.";
+        };
+        reader.onerror = () => {
+          alert("Erreur lors de la lecture du fichier.");
+        };
+        reader.readAsText(file);
+      }
+
+      // --- Écouteurs d'Événements ---
+
+      generateBtn.addEventListener("click", handleGenerate);
+      critiqueBtn.addEventListener("click", handleCritique);
+      downloadPdfBtn.addEventListener("click", handleDownloadPDF);
+      fileUploadInput.addEventListener("change", handleFileUpload);
+      letterContentDisplay.addEventListener("input", updateCritiqueButtonState);
+      jobTitleInput.addEventListener("input", updateCritiqueButtonState);
+
+      // Initialisation (désactiver critique au démarrage)
+      document.addEventListener("DOMContentLoaded", () => {
+        updateCritiqueButtonState();
+      });
+    </script>
+  </body>
+</html>
