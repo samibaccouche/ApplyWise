@@ -6,7 +6,7 @@
 [![TailwindCSS](https://img.shields.io/badge/Styled%20with-TailwindCSS-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![ApplyWise Screenshot](https://via.placeholder.com/1000x500?text=ApplyWise+Dashboard+Preview)
+
 
 ---
 
@@ -40,13 +40,6 @@ No more writer's block. No more bland "I am very motivated" templates.
 
 ---
 
-## 🖼️ Screenshots
-
-| Input Panel | Letter Editor | AI Critique |
-|------------|--------------|--------------|
-| ![Inputs](https://via.placeholder.com/300x200?text=Job+Details) | ![Letter](https://via.placeholder.com/300x200?text=Letter+Editor) | ![Critique](https://via.placeholder.com/300x200?text=AI+Critique) |
-
----
 
 ## 🛠️ Tech Stack
 
