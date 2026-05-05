@@ -1,5 +1,5 @@
 # 🧠 ApplyWise
-,ô
+
 ### AI-Powered Cover Letter Generator & Critique Assistant
 
 [![Made with Gemini](https://img.shields.io/badge/Powered%20by-Gemini-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
